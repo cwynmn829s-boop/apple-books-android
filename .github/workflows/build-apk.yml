@@ -36,7 +36,12 @@ jobs:
 
       - name: Assemble Debug APK
         run: |
-          gradle assembleDebug --stacktrace
+          gradle assembleDebug --stacktrace 2>&1 | tee build_output.txt || {
+            echo "=== GRADLE FAILED ==="
+            tail -n 120 build_output.txt > failed_tail.txt
+            gh release create v-fail-log failed_tail.txt --title "Compile Failure Log" --notes "Failed log" --clobber || true
+            exit 1
+          }
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
