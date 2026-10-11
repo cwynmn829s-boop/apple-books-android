@@ -32,14 +32,14 @@ jobs:
           gradle-version: '8.9'
 
       - name: Assemble Debug APK
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -o pipefail
-          gradle assembleDebug --stacktrace 2>&1 | tee build.log || {
-            echo "Build failed, dumping log..."
-            tail -n 150 build.log > failed_tail.txt
-            gh release create v-fail-log failed_tail.txt --title "Build Failed Log" --notes "Failed" --clobber
+          gradle assembleDebug --stacktrace > build.log 2>&1 || {
+            tail -n 120 build.log > build_error.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add build_error.txt
+            git commit -m "build failure log" || true
+            git push origin main || true
             exit 1
           }
 
