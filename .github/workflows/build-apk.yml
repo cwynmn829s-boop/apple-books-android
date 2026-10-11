@@ -21,14 +21,25 @@ jobs:
       - name: Configure Android SDK
         run: echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
       - name: Assemble debug APK
-        run: gradle assembleDebug --continue --stacktrace --info
-      - name: Upload debug APK artifact
+        run: |
+          gradle assembleDebug --stacktrace --info || {
+            echo "=== BUILD FAILED ==="
+            mkdir -p build-failure-logs
+            find app/build/reports -type f -exec cp {} build-failure-logs/ \\; 2>/dev/null || true
+            exit 1
+          }
+      - name: Upload debug APK and build reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          name: app-debug-apk-and-diagnostics
+          path: |
+            app/build/outputs/apk/debug/
+            app/build/reports/
+            build-failure-logs/
+          if-no-files-found: warn
       - name: Publish APK release
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
