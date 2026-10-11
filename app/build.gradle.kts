@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
     id("androidx.room")
 }
@@ -13,7 +14,6 @@ android { namespace = "com.cwynmn.books"; compileSdk = 35
     room { schemaDirectory("$projectDir/schemas") }
 }
 
-ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
