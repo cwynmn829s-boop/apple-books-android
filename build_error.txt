@@ -1,12 +1,6 @@
-The client will now receive all logging from the daemon (pid: 2299). The daemon log file: /home/runner/.gradle/daemon/8.9/daemon-2299.out.log
+The client will now receive all logging from the daemon (pid: 2499). The daemon log file: /home/runner/.gradle/daemon/8.9/daemon-2499.out.log
 Cannot use Kotlin build script compile avoidance with /home/runner/gradle-installations/installs/gradle-8.9/lib/gradle-kotlin-dsl-8.9.jar: class org/gradle/kotlin/dsl/ArtifactHandlerScope: inline fun invoke(): compile avoidance is not supported with public inline functions
 Adopted [service: null]
-e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:147:55 Unresolved reference 'Shelves'.
-e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:236:9 Unresolved reference 'LazyVerticalGrid'.
-e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:237:23 Unresolved reference 'GridCells'.
-e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:243:13 Unresolved reference 'items'.
-e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:243:33 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:245:17 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:282:37 Argument type mismatch: actual type is 'kotlin.Int', but 'androidx.compose.ui.unit.Dp' was expected.
+e: file:///home/runner/work/apple-books-android/apple-books-android/app/src/main/java/com/cwynmn/books/MainActivity.kt:284:37 Argument type mismatch: actual type is 'kotlin.Int', but 'androidx.compose.ui.unit.Dp' was expected.
 > Task :app:compileDebugKotlin FAILED
-BUILD FAILED in 2m 4s
+BUILD FAILED in 2m 53s
