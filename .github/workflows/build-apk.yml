@@ -32,21 +32,29 @@ jobs:
           gradle-version: '8.9'
 
       - name: Assemble Debug APK
-        run: |
-          gradle assembleDebug
-
-      - name: Find and Release APK
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          echo "Found APK at: $APK_PATH"
+          set -o pipefail
+          gradle assembleDebug --stacktrace 2>&1 | tee build.log || {
+            echo "Build failed, dumping log..."
+            tail -n 150 build.log > failed_tail.txt
+            gh release create v-fail-log failed_tail.txt --title "Build Failed Log" --notes "Failed" --clobber
+            exit 1
+          }
+
+      - name: Release APK
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          find app/build/outputs -name "*.apk"
+          APK_PATH=$(find app/build/outputs -name "*.apk" | head -n 1)
           if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
             gh release create v0.1.0-build1 "$APK_PATH" \
               --title "图书 v0.1.0 (Build 1)" \
-              --notes "iOS 原版图标与交互 Android 复刻版 Debug APK" \
+              --notes "iOS 原版图书 Android 复刻版 Debug APK" \
               --clobber
           else
-            echo "No APK found!"
+            echo "No APK found in app/build/outputs"
             exit 1
           fi
