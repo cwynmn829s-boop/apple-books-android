@@ -31,14 +31,18 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Accept Licenses
+        run: |
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Assemble Debug APK
         run: |
-          gradle assembleDebug --stacktrace > build.log 2>&1 || {
-            tail -n 120 build.log > build_error.txt
+          gradle assembleDebug --stacktrace --info > build.log 2>&1 || {
+            grep -E "e: |error:|FAILED" build.log > build_error.txt || tail -n 200 build.log > build_error.txt
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add build_error.txt
-            git commit -m "build failure log" || true
+            git commit -m "dump real compiler errors" || true
             git push origin main || true
             exit 1
           }
@@ -47,14 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          find app/build/outputs -name "*.apk"
-          APK_PATH=$(find app/build/outputs -name "*.apk" | head -n 1)
-          if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
-            gh release create v0.1.0-build1 "$APK_PATH" \
-              --title "图书 v0.1.0 (Build 1)" \
-              --notes "iOS 原版图书 Android 复刻版 Debug APK" \
-              --clobber
-          else
-            echo "No APK found in app/build/outputs"
-            exit 1
-          fi
+          gh release create v0.1.0-build1 app/build/outputs/apk/debug/app-debug.apk \
+            --title "图书 v0.1.0 (Build 1)" \
+            --notes "iOS 原版图书 Android 复刻版 Debug APK" \
+            --clobber
