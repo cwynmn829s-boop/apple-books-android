@@ -13,6 +13,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -144,7 +147,7 @@ fun BooksApp() {
                         ) {
                             listOf(
                                 "阅读中" to Icons.Default.AutoStories,
-                                "书库" to Icons.Default.Shelves,
+                                "书库" to Icons.Default.BookmarkBorder,
                                 "书店" to Icons.Default.Storefront,
                                 "搜索" to Icons.Default.Search
                             ).forEach { (label, icon) ->
@@ -240,8 +243,7 @@ fun BookGrid(books: List<Book>, list: Boolean, onOpen: (Book) -> Unit, modifier:
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalArrangement = Arrangement.spacedBy(22.dp)
         ) {
-            items(books.size) { index ->
-                val book = books[index]
+            items(books) { book: Book ->
                 Column(Modifier.clickable { onOpen(book) }) {
                     Cover(book, 155.dp)
                     Spacer(Modifier.height(8.dp))
