@@ -22,12 +22,13 @@ jobs:
         run: echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
       - name: Assemble debug APK
         run: |
-          gradle assembleDebug --stacktrace --info || {
-            echo "=== BUILD FAILED ==="
-            mkdir -p build-failure-logs
-            find app/build/reports -type f -exec cp {} build-failure-logs/ \\; 2>/dev/null || true
+          gradle assembleDebug --stacktrace --info > build.log 2>&1 || BUILD_FAILED=1
+          if [ "$BUILD_FAILED" = "1" ]; then
+            echo "Build failed, uploading log to release..."
+            gh release create v-debug-log build.log --title "Build Debug Log" --notes "Failed log" --clobber || true
+            tail -n 100 build.log
             exit 1
-          }
+          fi
       - name: Upload debug APK and build reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -37,7 +38,7 @@ jobs:
             app/build/outputs/apk/debug/
             app/build/reports/
             build-failure-logs/
-          if-no-files-found: warn
+          if-no-files-found: ignore
       - name: Publish APK release
         if: success()
         env:
