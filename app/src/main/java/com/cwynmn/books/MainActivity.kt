@@ -30,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import java.io.File
 import java.util.UUID
 import kotlin.math.abs
@@ -61,7 +60,7 @@ private fun ReaderApp() {
     val extra = remember(imported) { imported.split("\n").filter { it.isNotBlank() }.mapNotNull { path -> runCatching { val f=File(path); ReadBook(path, f.nameWithoutExtension, "本地文件", listOf("正文" to f.readText()), 0xff596a82, 0f, path) }.getOrNull() } }
     var selected by remember { mutableStateOf<ReadBook?>(null) }
     var query by remember { mutableStateOf("") }
-    val books = remember(extra) { samples.mapIndexed { i, s -> ReadBook("sample$i", s.title, s.author, s.chapters, s.color, prefs.getFloat("p$i", 0f)) } + extra }
+    val books = remember(extra) { samples.mapIndexed { i, s -> ReadBook("sample$i", s.title, s.author, s.chapters, s.color, prefs.getFloat("p_sample$i", 0f)) } + extra }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch { runCatching { val f=File(context.filesDir, "book_${UUID.randomUUID()}.txt"); context.contentResolver.openInputStream(uri)!!.use { input -> f.outputStream().use(input::copyTo) }; imported = (imported + "\n" + f.absolutePath).trim(); prefs.edit().putString("imports", imported).apply() } }
     }
@@ -79,7 +78,7 @@ private fun ReaderApp() {
                         items(books.filter { it.title.contains(query,true) || it.author.contains(query,true) }) { book ->
                             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color(0xff191e27)).clickable { selected=book }.padding(14.dp), verticalAlignment=Alignment.CenterVertically) {
                                 Box(Modifier.width(82.dp).height(112.dp).shadow(8.dp,RoundedCornerShape(7.dp)).clip(RoundedCornerShape(7.dp)).background(Color(book.color)), contentAlignment=Alignment.Center) { Text(book.title, Modifier.padding(8.dp), color=Color.White, textAlign=TextAlign.Center, fontWeight=FontWeight.Bold) }
-                                Column(Modifier.padding(start=16.dp).weight(1f)) { Text(book.title, color=Color(0xfff0eee9), fontSize=17.sp, fontWeight=FontWeight.SemiBold); Text(book.author, color=Color(0xffa6a8af), fontSize=13.sp); Spacer(Modifier.height(15.dp)); LinearProgressIndicator(progress={book.progress}, modifier=Modifier.fillMaxWidth(), color=Color(0xffc6a978), trackColor=Color(0xff303640)); Text(if(book.progress>0) "已读 ${(book.progress*100).toInt()}%" else "尚未阅读", color=Color(0xff858a94), fontSize=12.sp, modifier=Modifier.padding(top=5.dp)) }
+                                Column(Modifier.padding(start=16.dp).weight(1f)) { Text(book.title, color=Color(0xfff0eee9), fontSize=17.sp, fontWeight=FontWeight.SemiBold); Text(book.author, color=Color(0xffa6a8af), fontSize=13.sp); Spacer(Modifier.height(15.dp)); LinearProgressIndicator(progress=book.progress.coerceIn(0f,1f), modifier=Modifier.fillMaxWidth(), color=Color(0xffc6a978), trackColor=Color(0xff303640)); Text(if(book.progress>0) "已读 ${(book.progress*100).toInt()}%" else "尚未阅读", color=Color(0xff858a94), fontSize=12.sp, modifier=Modifier.padding(top=5.dp)) }
                             }
                         }
                     }
@@ -98,7 +97,8 @@ private fun ReaderScreen(book: ReadBook, prefs: android.content.SharedPreference
     var controls by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf(false) }
     var dragX by remember { mutableFloatStateOf(0f) }
-    var markList by remember { mutableStateOf(listOf<Mark>()) }
+    val marksKey = "marks_${book.id}"
+    var markList by remember(book.id) { mutableStateOf(prefs.getStringSet(marksKey, emptySet())!!.mapNotNull { entry -> entry.split("|", limit=2).takeIf { it.size==2 }?.let { parts -> parts[0].toIntOrNull()?.let { Mark(it, parts[1]) } } }) }
     val colors = listOf(Color(0xfffaf9f6) to Color(0xff25241f), Color(0xffeee4cf) to Color(0xff342d22), Color(0xff202630) to Color(0xffe4e7ec), Color.Black to Color(0xffeeeeee))
     val (paper, ink) = colors[theme]
     val amount by animateFloatAsState(if(dragX<0) (-dragX/600f).coerceIn(0f,.75f) else 0f, label="curl")
@@ -112,7 +112,7 @@ private fun ReaderScreen(book: ReadBook, prefs: android.content.SharedPreference
             Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) { Text("${chapter+1} / ${book.chapters.size} 章", color=ink.copy(.6f), fontSize=12.sp); Text("${if(book.chapters.isEmpty()) 0 else (chapter*100/book.chapters.size)}% · ${chapter+1}页", color=ink.copy(.6f), fontSize=12.sp) }
         }
         if(dragX<0) Canvas(Modifier.fillMaxSize()) { val w=size.width*amount; drawRect(Brush.horizontalGradient(listOf(Color.Transparent,Color.Black.copy(.32f),Color.Transparent), startX=size.width-w-20, endX=size.width), topLeft=Offset(size.width-w,0f), size=androidx.compose.ui.geometry.Size(w,size.height)); val curlPath=Path().apply { moveTo(size.width-w,0f); lineTo(size.width,0f); lineTo(size.width,size.height); lineTo(size.width-w,size.height); close() }; drawPath(curlPath, Color.White.copy(.13f)) }
-        if(controls) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().background(Color(0xee171b22)).padding(10.dp)) { Row(verticalAlignment=Alignment.CenterVertically) { IconButton(onClick=back) { Icon(Icons.Default.ArrowBack,"返回",tint=Color.White) }; Text(book.title, Modifier.weight(1f), color=Color.White); IconButton(onClick={markList=markList+Mark(chapter,pair.first)}) { Icon(Icons.Default.BookmarkAdd,"书签",tint=Color.White) }; IconButton(onClick={settings=true}) { Icon(Icons.Default.TextFields,"排版",tint=Color.White) } }; Slider(value=chapter.toFloat(), onValueChange={ move(it.toInt()) }, valueRange=0f..book.chapters.lastIndex.coerceAtLeast(1).toFloat()) }
+        if(controls) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().background(Color(0xee171b22)).padding(10.dp)) { Row(verticalAlignment=Alignment.CenterVertically) { IconButton(onClick=back) { Icon(Icons.Default.ArrowBack,"返回",tint=Color.White) }; Text(book.title, Modifier.weight(1f), color=Color.White); IconButton(onClick={ val updated=(markList+Mark(chapter,pair.first)).distinct(); markList=updated; prefs.edit().putStringSet(marksKey, updated.map { "${it.chapter}|${it.label}" }.toSet()).apply() }) { Icon(Icons.Default.BookmarkAdd,"书签",tint=Color.White) }; IconButton(onClick={settings=true}) { Icon(Icons.Default.TextFields,"排版",tint=Color.White) } }; Slider(value=chapter.toFloat(), onValueChange={ move(it.toInt()) }, valueRange=0f..book.chapters.lastIndex.coerceAtLeast(1).toFloat()) }
         if(controls) Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color(0xee171b22)).padding(14.dp), horizontalArrangement=Arrangement.SpaceBetween) { TextButton(onClick={move(-1)}) { Text("上一页") }; Text("${chapter+1} / ${book.chapters.size}",color=Color.White); TextButton(onClick={move(1)}) { Text("下一页") } }
     }
     if(settings) AlertDialog(onDismissRequest={settings=false}, title={Text("阅读设置")}, text={ Column { Text("字体大小 ${font.toInt()}sp"); Slider(value=font,onValueChange={font=it},valueRange=15f..32f); Text("行间距 ${String.format("%.2f",line)}"); Slider(value=line,onValueChange={line=it},valueRange=1.3f..2.2f); Text("页面主题"); Row { listOf("浅色","纸张","石墨","墨黑").forEachIndexed { i,label -> TextButton(onClick={theme=i}) { Text(label) } } }; Text("本书书签：${markList.joinToString { "第${it.chapter+1}章 ${it.label}" }}") } }, confirmButton={TextButton(onClick={settings=false}) { Text("完成") }})
