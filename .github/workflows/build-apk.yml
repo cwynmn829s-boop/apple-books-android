@@ -15,10 +15,10 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Make Gradle launcher executable
-        run: chmod +x gradlew
+        with:
+          gradle-version: '8.9'
       - name: Assemble debug APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
